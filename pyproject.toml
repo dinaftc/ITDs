@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "itd"
+version = "0.1.0"
+description = "Interaction Trace Databases for Agent Experience Reuse"
+requires-python = ">=3.10"
+dependencies = ["numpy", "pyyaml", "openai>=1.0"]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]>=3.1", "pgvector>=0.3"]
+qdrant = ["qdrant-client>=1.12"]
+embeddings = ["sentence-transformers>=2.2"]
+alfworld = ["alfworld"]
+webarena = ["browsergym-webarena"]
+plots = ["matplotlib"]
+dev = ["pytest"]
+
+[project.scripts]
+itd = "itd.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["itd*"]
+
+[tool.setuptools.package-data]
+"itd.store" = ["*.sql"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

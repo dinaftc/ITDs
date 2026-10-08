@@ -1,0 +1,17 @@
+# Versions match Section 4.8 of the paper.
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg16
+    environment:
+      POSTGRES_USER: itd
+      POSTGRES_PASSWORD: itd
+      POSTGRES_DB: itd
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+  qdrant:
+    image: qdrant/qdrant:v1.19.2
+    ports: ["6333:6333"]
+    volumes: ["qdrantdata:/qdrant/storage"]
+volumes:
+  pgdata:
+  qdrantdata:

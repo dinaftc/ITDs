@@ -1,0 +1,15 @@
+# ALFWorld, 134 valid_unseen tasks, Qwen2.5-72B in a zero-shot ReAct loop, 50-step horizon.
+benchmark: alfworld
+split: eval
+solver: qwen2.5-72b
+k: 1
+n: 1
+theta: 0.5
+init_traces: data/traces/alfworld_qwen2.5-72b.jsonl   # produced by `scripts/reproduce.sh populate_alfworld`
+store: postgres
+out: runs/alfworld
+max_obs_chars: 300
+env:
+  config: configs/alfworld_base.yaml    # copy of ALFWorld's configs/base_config.yaml
+  max_steps: 50
+  train_tasks: 180

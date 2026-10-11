@@ -5,14 +5,12 @@ and whether it worked. An ITD is a database for those traces. It keeps them,
 decides which are worth keeping as more arrive, and hands the relevant ones
 back when a similar task comes up.
 
-The point is the separation. Most systems that reuse agent experience decide
-up front what the experience *is* — a demonstration, a rule, a skill — and
-then build storage around that choice, so changing the representation means
-re-deriving everything and the raw interactions are gone. Here the store keeps
-traces, and what to make of them is a separate decision taken at retrieval
-time. The same retained traces can be replayed as demonstrations, distilled
-into rules, or turned into a retrospective, and nothing about the store
-changes.
+Most systems that reuse agent experience decide up front what the experience is: 
+a demonstration, a rule, a skill  and then build storage around that choice, 
+so changing the representation means re-deriving everything and the raw interactions 
+are gone. Here the store keeps traces, and what to make of them is a separate decision
+taken at retrieval time. The same retained traces can be replayed as demonstrations, 
+distilled into rules, or turned into a retrospective, and nothing about the store changes.
 
 Two operators do the work:
 

@@ -95,21 +95,8 @@ Both benchmarks are optional:
   `data/webarena_checkpoints.json`; the format is in
   `data/webarena_checkpoints.example.json`.
 
-## Try it without any of that
 
-A toy environment, a mock LLM that picks random admissible actions, and the
-in-memory backend. No API key, no database, no benchmark:
-
-```bash
-itd run --config configs/toy.yaml --mode raw --split train --tag populate
-itd run --config configs/toy.yaml --approach hybrid --policy failure-triggered \
-        --strategy combined --init-traces runs/toy/populate_seed0/traces.jsonl
-itd summarize runs/toy/*
-```
-
-It exercises the whole pipeline. The success rates it prints mean nothing.
-
-## Running something real
+## Running
 
 `itd run` runs one configuration. A YAML file supplies the defaults
 (`configs/alfworld.yaml`, `configs/webarena.yaml`) and flags override them;

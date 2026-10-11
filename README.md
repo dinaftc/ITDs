@@ -3,8 +3,16 @@
 An LLM agent that solves a task produces a trace: what it saw, what it did,
 and whether it worked. An ITD is a database for those traces. It keeps them,
 decides which are worth keeping as more arrive, and hands the relevant ones
-back when a similar task comes up — separately from how an agent chooses to
-use them.
+back when a similar task comes up.
+
+The point is the separation. Most systems that reuse agent experience decide
+up front what the experience *is* — a demonstration, a rule, a skill — and
+then build storage around that choice, so changing the representation means
+re-deriving everything and the raw interactions are gone. Here the store keeps
+traces, and what to make of them is a separate decision taken at retrieval
+time. The same retained traces can be replayed as demonstrations, distilled
+into rules, or turned into a retrospective, and nothing about the store
+changes.
 
 Two operators do the work:
 
@@ -147,3 +155,55 @@ benchmark's own verdict on success — they only rank what failed.
 Retrieval reads all three categories by default. A failure is worth showing
 precisely because it shows what not to do, which the Rules and Reflections
 prompts both lean on.
+
+## Why it is shaped this way
+
+**Three categories, kept apart.** A binary outcome cannot tell a trace that
+nearly finished from one that fell over on the first move, and those two are
+useful in different ways. Scoring them on one scale would also let whichever
+kind happens to arrive most often evict the others; separate partitions make
+that impossible, so a template keeps its best success, its best near-miss and
+its most instructive failure side by side.
+
+**Bounded by variety, not by time.** With budget `k` and `|T|` templates the
+store holds at most `3k|T|` traces, however many tasks have been attempted.
+An agent that runs for a month on the same kinds of work does not accumulate
+a month of traces.
+
+**Exact first, similar second.** A task whose own template is in the store is
+answered by an indexed equality lookup, with no vector search at all; the
+embedding ranking only runs when that does not fill the budget. The common
+case stays cheap, and a task with no history of its own can still borrow from
+the closest template in its family.
+
+**Retrieve late, by default.** Handing a solver past experience before it has
+tried anything is not free: it can crowd the prompt, and some solvers copy the
+retrieved trace rather than adapt it. Failure-triggered retrieval lets the
+first attempt run unaided and only reaches for the store if that fails, which
+leaves the tasks the solver could already do alone. It costs a second attempt,
+so the honest comparison is against `--mode retry` — a second unaided attempt
+— rather than against the single-attempt baseline.
+
+**Nothing is tied to one model.** Each trace records the actor that produced
+it and each experience records the synthesizer that wrote it, so the actor,
+the synthesizer and the task solver can be three different models. A small
+solver can run on traces collected by a larger one, with experiences written
+by a third.
+
+## Backends
+
+Both backends implement the same partitioning and ranking, so the choice is
+about deployment rather than behaviour.
+
+**PostgreSQL** keeps traces in a table indexed on
+`(task_family, template_desc, quality_category, quality_score DESC)` — one
+B-tree that both finds the partition and returns it in ranked order — plus a
+pgvector HNSW index over template embeddings for the fallback. Templates are
+a separate table because similarity ranks templates, not traces.
+
+**Qdrant** keeps traces and templates in separate collections, with payload
+indices for the partition key and ranking attributes and HNSW over the
+template vectors.
+
+**In-memory** is the reference the other two are tested against; `tests/`
+runs the same operator semantics over all three.

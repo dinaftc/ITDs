@@ -1,5 +1,21 @@
-"""Reuse strategies: turn retrieved traces into an Experience,
-and wrap experiences for injection into the task solver's prompt."""
+"""Reuse strategies: turn retrieved traces into an Experience, and wrap it for
+the task solver's prompt.
+
+The same retrieved traces support all three, which is the point of keeping
+traces rather than only what was derived from them:
+
+  Examples      the trajectories themselves, grouped by how far each got. No
+                synthesizer, so nothing is lost in abstraction, but the solver
+                has to work out what to carry over -- and some solvers copy a
+                retrieved trace instead of adapting it.
+  Rules         conditional do/don't directives abstracted over the traces,
+                with whatever varies between tasks replaced by placeholders.
+  Reflections   a diagnosis of why the attempts ended as they did, which is
+                what a store holding mostly unsuccessful traces can still say
+                something useful about.
+
+Combined presents all three, derived from the same traces.
+"""
 from __future__ import annotations
 
 import re

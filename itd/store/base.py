@@ -1,7 +1,14 @@
-"""Store interface shared by the in-memory, PostgreSQL and Qdrant instantiations.
+"""Store interface shared by the in-memory, PostgreSQL and Qdrant backends.
 
-The two operators are `maintain` and `retrieve`; every
-instantiation applies the same partitioning and trace ranking.
+The two operators are `maintain` and `retrieve`, and every backend applies the
+same partitioning and the same trace ranking, so a store can be moved between
+them without changing which traces it keeps or returns.
+
+A partition is one (task template, quality category). Keeping the three
+categories apart is what stops a flood of successes from evicting the one
+failure that shows where the trap is, and it caps the store at 3k templates
+rather than at the number of tasks ever attempted: the store grows with the
+variety of work, not with how long the agent has been running.
 """
 from __future__ import annotations
 
@@ -11,8 +18,12 @@ import numpy as np
 
 from ..model import CATEGORIES, Experience, Task, Trace
 
-EXACT_FALLBACK = "exact+fallback"   # ITD retrieval: exact template, then similarity fallback
-SIMILARITY_ONLY = "similarity"      # skip the exact lookup, always rank by embedding
+# Retrieval alternatives. The default answers from the task's own template
+# first and only falls back to embedding similarity when that does not fill
+# the budget, which keeps the common case to an indexed equality lookup and
+# still lets a task with no history of its own borrow from a close relative.
+EXACT_FALLBACK = "exact+fallback"
+SIMILARITY_ONLY = "similarity"      # always rank templates by embedding
 
 
 class ITDStore(ABC):

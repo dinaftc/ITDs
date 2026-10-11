@@ -1,4 +1,11 @@
-"""ITD lifecycle for one task (Algorithm 1)."""
+"""What happens to one task: retrieve, solve, maintain.
+
+Three choices are independent here, and that is deliberate -- the maintenance
+approach decides when the store is written, the retrieval policy decides when
+it is read, and the reuse strategy decides what the solver is handed. Any
+combination is valid, and which one wins is an empirical question rather than
+a property of the design.
+"""
 from __future__ import annotations
 
 import time
@@ -36,7 +43,7 @@ class Lifecycle:
         return self.store.maintain(trace, self.k)
 
     def experience(self, task: Task) -> list[Experience]:
-        """Lines 10-17: cached experience, else RetrieveAll + materialize."""
+        """The cached experience for this template, or build one and cache it."""
         exclude = task.task_id if self.leave_one_out else None
         # A cached experience may derive from the held-out task's own traces.
         use_cache = not (exclude and self.store.has_task_traces(exclude))
@@ -70,8 +77,10 @@ class Lifecycle:
                 if self.approach != OFFLINE:
                     self.maintain(task, first)
                 return first, info
-            # The failed first attempt stays transient: it is not passed to
-            # Maintain, so the retry only uses data retained before this task.
+            # The failed first attempt stays transient: it is never passed to
+            # maintain, so the retry cannot be handed back the failure it just
+            # produced. Without this the store pollutes itself at exactly the
+            # moment the solver most needs something else to go on.
             info["attempts"] = 2
         experiences = self.experience(task)
         info["experience_traces"] = len(experiences[0].trace_ids) if experiences else 0

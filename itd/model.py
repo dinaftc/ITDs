@@ -1,4 +1,10 @@
-"""The data model: Task, Trace, Step, Experience."""
+"""The data model: Task, Trace, Step, Experience.
+
+A Trace records the `actor` that produced it and an Experience records the
+`synthesizer` that wrote it, so neither is tied to the model now solving the
+task. That is what lets a small, cheap task solver run on traces collected by
+a larger one, and on experiences written by a third.
+"""
 from __future__ import annotations
 
 import time
@@ -71,9 +77,12 @@ class Trace:
 
 @dataclass
 class Experience:
-    """Reusable material derived from retrieved traces.
+    """What retrieval actually hands the task solver, built from traces.
 
-    `synthesizer` is "" for Examples, which needs no LLM to assemble.
+    Keyed by (task family, template, strategy, synthesizer) and cached under
+    that key, so the same traces are never synthesized twice; `maintain`
+    invalidates the entry when it changes the partition they came from.
+    `synthesizer` is "" for Examples, which needs no model to assemble.
     """
 
     task_family: str

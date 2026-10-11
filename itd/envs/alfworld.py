@@ -1,9 +1,16 @@
 """ALFWorld adapter (text-only AlfredTWEnv).
 
-Task templates are derived deterministically from the PDDL metadata
-(traj_data.json): one structural pattern per task family, with concrete
-targets replaced by slots. Progress m/M compares the planner's plan at reset
-with the plan remaining after execution; navigation commands are excluded.
+A task's family is its PDDL ``task_type``; its template is the goal sentence
+with the concrete targets replaced by slots, so every "put a hot X in Y" task
+shares one template regardless of the objects involved. Both come from
+``traj_data.json``, so they are derived, never annotated.
+
+Progress is read from the environment's planner rather than inferred from the
+agent's text. TextWorld can be asked at any point for the optimal command
+sequence from the current world state to the goal, so the number of sub-goals
+is the plan length at reset and the number retired is how much shorter the
+plan has become. Navigation is excluded: "go to x" always succeeds, and
+counting it would credit progress for walking around.
 
 Requires `pip install alfworld`, `alfworld-download`, and ALFWORLD_DATA.
 """
@@ -20,14 +27,15 @@ import yaml
 from ..model import Task
 from .base import Environment, StepResult
 
-# task_type in traj_data.json -> (task family, task template)
-FAMILIES = {
-    "pick_and_place_simple": ("Pick and place", "place an object in a receptacle"),
-    "pick_two_obj_and_place": ("Pick two and place", "place two objects of the same type in a receptacle"),
-    "look_at_obj_in_light": ("Examine in light", "examine an object under a light source"),
-    "pick_clean_then_place_in_recep": ("Clean and place", "clean an object and place it in a receptacle"),
-    "pick_heat_then_place_in_recep": ("Heat and place", "heat an object and place it in a receptacle"),
-    "pick_cool_then_place_in_recep": ("Cool and place", "cool an object and place it in a receptacle"),
+# The six PDDL task types. The family is the task_type itself; the template is
+# the goal sentence with its targets slotted out.
+TEMPLATES = {
+    "pick_and_place_simple": "put a {object} in {receptacle}",
+    "pick_two_obj_and_place": "put two {object} in {receptacle}",
+    "look_at_obj_in_light": "look at {object} under the {toggle}",
+    "pick_clean_then_place_in_recep": "put a clean {object} in {receptacle}",
+    "pick_heat_then_place_in_recep": "put a hot {object} in {receptacle}",
+    "pick_cool_then_place_in_recep": "put a cool {object} in {receptacle}",
 }
 SPLITS = {"eval": "valid_unseen", "valid_unseen": "valid_unseen", "valid_seen": "valid_seen", "train": "train"}
 
@@ -51,7 +59,7 @@ class ALFWorldEnv(Environment):
     def __init__(self, config: str = "configs/alfworld_base.yaml", max_steps: int = 50,
                  train_tasks: int = 180, train_seed: int = 0, **_):
         """config: ALFWorld's base_config.yaml. train_tasks: size of the sample
-        of training games (balanced over families) used to pre-populate ITDs."""
+        of training games (balanced over families) used to pre-populate a store."""
         self.max_steps, self.train_tasks, self.train_seed = max_steps, train_tasks, train_seed
         with open(config) as f:
             self.config = yaml.safe_load(f)
@@ -69,13 +77,14 @@ class ALFWorldEnv(Environment):
         for game in sorted(glob.glob(os.path.join(root, "*", "*", "game.tw-pddl"))):
             with open(os.path.join(os.path.dirname(game), "traj_data.json")) as f:
                 traj = json.load(f)
-            if traj["task_type"] not in FAMILIES:
+            if traj["task_type"] not in TEMPLATES:
                 continue
             with open(game) as f:
                 data = json.load(f)
             if not data.get("solvable", True):
                 continue
-            family, template = FAMILIES[traj["task_type"]]
+            family = traj["task_type"]
+            template = TEMPLATES[family]
             task_id = "/".join(game.split(os.sep)[-3:-1])
             self._games[task_id] = game
             by_family.setdefault(family, []).append(Task(task_id, family, template, self._goal(data, traj)))

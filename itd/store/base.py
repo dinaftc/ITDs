@@ -1,6 +1,6 @@
 """Store interface shared by the in-memory, PostgreSQL and Qdrant instantiations.
 
-The two ITD operators (Section 3.3) are `maintain` and `retrieve`; every
+The two operators are `maintain` and `retrieve`; every
 instantiation applies the same partitioning and trace ranking.
 """
 from __future__ import annotations
@@ -12,7 +12,7 @@ import numpy as np
 from ..model import CATEGORIES, Experience, Task, Trace
 
 EXACT_FALLBACK = "exact+fallback"   # ITD retrieval: exact template, then similarity fallback
-SIMILARITY_ONLY = "similarity"      # alternative evaluated in Section 4.8
+SIMILARITY_ONLY = "similarity"      # skip the exact lookup, always rank by embedding
 
 
 class ITDStore(ABC):
@@ -28,7 +28,11 @@ class ITDStore(ABC):
 
     @abstractmethod
     def maintain(self, trace: Trace, k: int) -> bool:
-        """Maintain(D, τ, k), Eq. (5): keep the top-k of P_{tpl(τ),c}(D) ∪ {τ}.
+        """Keep at most k traces in the partition the trace belongs to.
+
+        A partition is one (task template, quality category) pair. The
+        incoming trace competes with the traces already there; the k best by
+        quality score, ties broken by the shorter trace, are kept.
 
         `trace` must already carry its quality category and score, and its task
         must have been registered. Returns True iff τ is retained; in that case
@@ -39,7 +43,7 @@ class ITDStore(ABC):
     def retrieve(self, task: Task, category: str, n: int, *, exclude_task_id: str | None = None,
                  mode: str = EXACT_FALLBACK, query_vec: np.ndarray | None = None,
                  with_steps: bool = True) -> list[Trace]:
-        """Retrieve(t, D, c, n), Eq. (6): at most n traces of category c.
+        """At most n traces of one quality category for this task.
 
         Traces of t's own task template come first. Remaining positions are
         filled from other templates of the same task family, ranked by cosine
@@ -49,7 +53,7 @@ class ITDStore(ABC):
         """
 
     def retrieve_all(self, task: Task, n: int, *, categories=CATEGORIES, **kw) -> list[Trace]:
-        """RetrieveAll(t, D, n), Eq. (7): at most n traces per quality category."""
+        """At most n traces from each quality category, in category order."""
         if kw.get("query_vec") is None:
             kw["query_vec"] = self.embed_query(task)
         out: list[Trace] = []

@@ -36,7 +36,7 @@ def main(argv=None) -> None:
     p_sum.add_argument("runs", nargs="+", type=Path)
     p_sum.add_argument("--by", help="group by a result field, e.g. task_family or interaction_type")
 
-    p_bench = sub.add_parser("bench", help="operator latency (Section 4.8)")
+    p_bench = sub.add_parser("bench", help="operator latency on a synthetic store")
     from . import bench
     bench.add_arguments(p_bench)
 

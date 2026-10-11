@@ -1,4 +1,4 @@
-"""Text embedders used for template similarity (Section 3.3, Retrieve)."""
+"""Text embedders used for template similarity in Retrieve."""
 from __future__ import annotations
 
 import hashlib
@@ -8,7 +8,7 @@ import numpy as np
 
 
 class SentenceEmbedder:
-    """all-MiniLM-L6-v2 by default, as in the paper (384 dimensions)."""
+    """all-MiniLM-L6-v2 by default: 384 dimensions, cosine distance."""
 
     def __init__(self, name: str = "all-MiniLM-L6-v2"):
         from sentence_transformers import SentenceTransformer
@@ -22,7 +22,7 @@ class SentenceEmbedder:
 
 class HashEmbedder:
     """Deterministic bag-of-words hashing embedder. No model download; used by
-    the tests and the dry-run configuration, not by the paper's experiments."""
+    the tests and the dry-run configuration; it is not meant for real runs."""
 
     def __init__(self, dim: int = 384):
         self.dim = dim

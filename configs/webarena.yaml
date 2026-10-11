@@ -4,8 +4,8 @@ solver: deepseek-v3.2
 k: 1
 n: 1
 theta: 0.5
-init_traces: data/traces/webarena_deepseek-v3.2.jsonl  # produced by `scripts/reproduce.sh populate_webarena`
-leave_one_out: true        # the initial ITD comes from the evaluated tasks themselves
+init_traces: data/traces/webarena_deepseek-v3.2.jsonl  # produced by `scripts/experiments.sh populate_webarena`
+leave_one_out: true        # the seed store is built from the evaluated tasks themselves
 store: postgres
 out: runs/webarena
 history_obs: 1             # only the current page is kept in full in the prompt

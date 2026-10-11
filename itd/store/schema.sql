@@ -1,4 +1,4 @@
--- Relational instantiation of an ITD (Table 2).
+-- Relational schema of an interaction trace database.
 -- {dim} is replaced by the embedding dimension; all objects live in the
 -- schema selected by the connection's search_path (one schema per ITD).
 

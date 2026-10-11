@@ -1,4 +1,4 @@
-"""Operator efficiency (Section 4.8): median Maintain / Retrieve latency on
+"""Operator latency: median Maintain / Retrieve time on
 synthetic ITDs, varying the number of traces, the number of task templates,
 and the maintenance and retrieval budgets.
 

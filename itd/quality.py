@@ -1,4 +1,4 @@
-"""Quality categories and scores (Section 3.1, "Quality category and partition")."""
+"""Quality categories and the score that ranks traces inside one."""
 from __future__ import annotations
 
 from .model import FAILURE, NEAR_SUCCESS, SUCCESS, Trace

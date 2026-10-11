@@ -1,4 +1,4 @@
-"""A tiny text environment for dry runs and tests (not used in the paper).
+"""A tiny text environment for dry runs and tests.
 
 Each task is a fixed sequence of three subtasks, e.g. take / heat / put, so
 attempts end as success, near-success or failure like on the real benchmarks.

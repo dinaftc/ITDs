@@ -1,4 +1,4 @@
-"""Operator semantics (Section 3.3), checked on every available instantiation.
+"""Operator semantics, checked against every available backend.
 
 PostgreSQL is tested when ITD_TEST_PG_DSN points to a server with pgvector.
 """
@@ -12,7 +12,7 @@ from itd.model import CATEGORIES, FAILURE, NEAR_SUCCESS, SUCCESS, Experience, St
 from itd.quality import assign_quality
 from itd.store import SIMILARITY_ONLY, make_store
 
-MAP = "Map"
+MAP = "map"
 TWO_ROUTES = "What is the duration required to walk from A to B, then drive from B to C?"
 DRIVE = "How long does it take to drive from A to B?"
 PHONE = "What is the phone number of A?"
@@ -96,11 +96,11 @@ def test_retrieve_ranks_within_partition(store):
 
 
 def test_similarity_fallback_within_family(store):
-    drive, phone, other = task(1, DRIVE), task(2, PHONE), task(3, DRIVE, family="GitLab")
+    drive, phone, other = task(1, DRIVE), task(2, PHONE), task(3, DRIVE, family="gitlab")
     put(store, trace(drive, success=True, horizon=5), drive)
     put(store, trace(phone, success=True, horizon=7), phone)
     put(store, trace(other, success=True, horizon=3), other)
-    # unseen Map template: falls back to the closest stored Map template, never to another family
+    # unseen map template: falls back to the closest stored map template, never to another family
     new = task(9, "How long does it take to drive from A to C via B?",
                desc="How long does it take to drive from CMU to the airport via downtown?")
     got = store.retrieve(new, SUCCESS, 2)

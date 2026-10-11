@@ -1,4 +1,4 @@
-"""ITD data model (Section 3.1): Task, Trace, Step, Experience."""
+"""The data model: Task, Trace, Step, Experience."""
 from __future__ import annotations
 
 import time
@@ -19,7 +19,7 @@ STRATEGIES = (EXAMPLES, RULES, REFLECTIONS, COMBINED)
 
 @dataclass(frozen=True)
 class Task:
-    """Eq. (1)."""
+    """A task the agent is asked to do, and the template it instantiates."""
 
     task_id: str
     task_family: str
@@ -29,7 +29,7 @@ class Task:
 
 @dataclass
 class Step:
-    """Eq. (3); trace_id is implied by the owning Trace."""
+    """One turn of a trace; the trace it belongs to is implied by the owner."""
 
     step_index: int
     observation: str
@@ -38,7 +38,7 @@ class Step:
 
 @dataclass
 class Trace:
-    """Eq. (2), plus the materialized attributes of the Trace relation (Table 2).
+    """One attempt at a task, with the attributes the store indexes on.
 
     `progress` (m/M, as reported by the environment) and `task_desc` are not
     part of the relation: progress is only needed to assign the quality
@@ -71,7 +71,10 @@ class Trace:
 
 @dataclass
 class Experience:
-    """Eq. (4). `synthesizer` is "" for Examples (the paper's ∅)."""
+    """Reusable material derived from retrieved traces.
+
+    `synthesizer` is "" for Examples, which needs no LLM to assemble.
+    """
 
     task_family: str
     template_desc: str

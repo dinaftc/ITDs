@@ -1,5 +1,5 @@
 {
-  "_comment": "Format of data/webarena_checkpoints.json: task_id -> list of checkpoints. A checkpoint is satisfied once all of its regexes match at the same step: 'url' on the page URL, 'action' on the action just issued, 'obs' on the accessibility tree. Progress m/M = satisfied / total. The entry below is an illustration, not one of the validated checkpoints used in the paper.",
+  "_comment": "Format of data/webarena_checkpoints.json: task_id -> list of checkpoints. A checkpoint is satisfied once all of its regexes match at the same step: 'url' on the page URL, 'action' on the action just issued, 'obs' on the accessibility tree. Progress m/M = satisfied / total. The entry below is an illustration, not a validated checkpoint.",
   "0": [
     {"url": "/directions"},
     {"obs": "(?i)foot|walk"},

@@ -1,5 +1,5 @@
 # name -> OpenAI-compatible endpoint. ${VARS} are read from the environment / .env.
-# The paper runs both task solvers at temperature 0.1.
+# Both task solvers run at temperature 0.1.
 deepseek-v3.2:
   model: deepseek-chat
   base_url: ${DEEPSEEK_BASE_URL}

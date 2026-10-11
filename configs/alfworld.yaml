@@ -5,7 +5,7 @@ solver: qwen2.5-72b
 k: 1
 n: 1
 theta: 0.5
-init_traces: data/traces/alfworld_qwen2.5-72b.jsonl   # produced by `scripts/reproduce.sh populate_alfworld`
+init_traces: data/traces/alfworld_qwen2.5-72b.jsonl   # produced by `scripts/experiments.sh populate_alfworld`
 store: postgres
 out: runs/alfworld
 max_obs_chars: 300

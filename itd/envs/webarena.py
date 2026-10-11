@@ -1,10 +1,14 @@
 """WebArena adapter, through BrowserGym.
 
-Task families come from the benchmark's `sites` field and task templates from
-`intent_template` (190 templates over the 812 tasks). Progress m/M is computed
-from intermediate checkpoints (see data/webarena_checkpoints.example.json):
-they supplement the benchmark's final evaluation, are only used to assign
-trace quality, and are never shown to the task solver.
+A task's family is its site (`gitlab`, `shopping`, ...), or `cross_site` when
+it spans several; its template is the benchmark's own `intent_template`, of
+which there are 190 across the 812 tasks.
+
+Progress comes from intermediate checkpoints (format in
+`data/webarena_checkpoints.example.json`). These only ever supplement the
+benchmark's own final evaluation, which decides success and is never replaced
+or approximated; checkpoints are used to rank unsuccessful traces, and are
+never shown to the task solver.
 
 Requires `pip install browsergym-webarena`, `playwright install chromium`,
 and the WA_* environment variables of a running WebArena instance.
@@ -19,8 +23,7 @@ from pathlib import Path
 from ..model import Task
 from .base import Environment, StepResult
 
-SITE_FAMILY = {"shopping": "Shopping", "shopping_admin": "Shopping Admin", "reddit": "Reddit",
-               "gitlab": "GitLab", "map": "Map"}
+SITES = ("shopping", "shopping_admin", "reddit", "gitlab", "map")
 
 CONTEXT = """You are a web agent operating a browser to complete a task on a website.
 Each observation gives the current URL and the accessibility tree of the page; elements are
@@ -38,13 +41,25 @@ def load_task_configs() -> list[dict]:
 
 
 def family_of(sites: list[str]) -> str:
-    return SITE_FAMILY[sites[0]] if len(sites) == 1 else "Cross-site"
+    """The site a task belongs to, or `cross_site` when it spans several."""
+    return sites[0] if len(sites) == 1 else "cross_site"
 
 
 def interaction_type(config: dict) -> str:
-    """Information-seeking tasks are evaluated on the returned answer only;
-    state-changing tasks are evaluated on the resulting site state."""
-    return "information-seeking" if config["eval"]["eval_types"] == ["string_match"] else "state-changing"
+    """How the benchmark checks the task, which says what the agent had to do.
+
+    `string_match` grades the answer the agent returns, so the task is
+    information-seeking; `program_html` inspects the resulting site state, so
+    the task changed something; `url_match` alone only asks where the agent
+    ended up. A task with several checks is state-changing if any of them
+    inspects state.
+    """
+    types = set(config["eval"]["eval_types"])
+    if "program_html" in types:
+        return "state-changing"
+    if types == {"url_match"}:
+        return "navigational"
+    return "information-seeking"
 
 
 class WebArenaEnv(Environment):

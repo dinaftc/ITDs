@@ -1,33 +1,70 @@
-# Interaction Trace Databases (ITDs)
+# Interaction Trace Databases
 
-An ITD stores the interaction traces produced by LLM agents and keeps their
-storage, maintenance and retrieval separate from the way they are reused.
-This repository contains the data model, the `Maintain` and `Retrieve`
-operators over PostgreSQL/pgvector and Qdrant, the three reuse strategies
-(Examples, Rules, Reflections, plus Combined), the On-demand and
-Failure-triggered retrieval policies, and the scripts that run the paper's
-experiments on WebArena and ALFWorld.
+An LLM agent that solves a task produces a trace: what it saw, what it did,
+and whether it worked. An ITD is a database for those traces. It keeps them,
+decides which are worth keeping as more arrive, and hands the relevant ones
+back when a similar task comes up — separately from how an agent chooses to
+use them.
 
-## Layout
+Two operators do the work:
+
+- **`maintain(trace, k)`** — keep at most `k` traces per partition, where a
+  partition is one (task template, quality category). The incoming trace
+  competes with what is already there and the best `k` survive.
+- **`retrieve(task, category, n)`** — up to `n` traces of one quality
+  category. Traces of the task's own template come first; anything left over
+  is filled from nearby templates of the same family, by embedding similarity.
+
+Everything else is built on those two: three ways of turning retrieved traces
+into something an agent can use, two points in a task's life at which to
+retrieve, and three ways of deciding what goes into the store in the first
+place.
+
+```python
+from itd.embeddings import SentenceEmbedder
+from itd.model import Task, Trace, Step
+from itd.quality import assign_quality
+from itd.store import make_store
+
+store = make_store("postgres", SentenceEmbedder(), "demo",
+                   dsn="postgresql://itd:itd@localhost/itd")
+
+task = Task("308", "gitlab",
+            "Tell me who has made the most contributions to {repo}",
+            "Tell me who has made the most contributions, in terms of number "
+            "of commits, to the a11yproject.com project")
+trace = Trace(task.task_id, task.task_family, task.template_desc,
+              actor="deepseek-v3.2", label="success", reward=1.0, horizon=4,
+              steps=[Step(0, "<accessibility tree>", "click('1194')")])
+
+store.add_task(task)
+store.maintain(assign_quality(trace), k=1)
+store.retrieve_all(task, n=1)
+```
+
+See [`examples/`](examples/) for real traces and experiences, taken from
+actual runs rather than written by hand.
+
+## What is in the box
 
 | Path | Content |
-|---|---|---|
-| `itd/model.py` |  `Task`, `Trace`, `Step`, `Experience` |
-| `itd/quality.py` | quality categories and scores, threshold θ |
-| `itd/store/base.py` |  operator interface: `maintain`, `retrieve`, `retrieve_all`, experience cache |
-| `itd/store/schema.sql`, `postgres.py` |  relational instantiation (Table 2), B-tree and HNSW indices |
-| `itd/store/qdrant.py` |  vector-database instantiation (trace and template collections) |
-| `itd/store/memory.py` | in-memory reference instantiation |
-| `itd/strategies.py`, `prompts.py` |  materialization of experiences, synthesis prompts, injection wrappers |
-| `itd/lifecycle.py` |  maintenance approaches and retrieval policies for one task |
-| `itd/solver.py` |  zero-shot ReAct task solver |
-| `itd/envs/` |  ALFWorld and WebArena adapters, templates, progress `m/M`; a toy environment |
-| `itd/runner.py`, `cli.py` | experiment runner, raw and Retry baselines, result summaries |
-| `itd/bench.py` |  operator latency on synthetic ITDs |
-| `scripts/reproduce.sh` |  one function per table / figure |
-| `tests/` |  operator semantics on every instantiation, Algorithm 1 |
+|---|---|
+| `itd/model.py` | `Task`, `Trace`, `Step`, `Experience` |
+| `itd/quality.py` | quality categories, scores, the near-success threshold θ |
+| `itd/store/base.py` | the operator interface, plus the experience cache |
+| `itd/store/postgres.py`, `schema.sql` | PostgreSQL backend: B-tree partitions, HNSW over template embeddings |
+| `itd/store/qdrant.py` | Qdrant backend: trace and template collections |
+| `itd/store/memory.py` | in-memory backend, the reference the other two are tested against |
+| `itd/strategies.py`, `prompts.py` | Examples, Rules, Reflections, Combined; synthesis prompts and injection |
+| `itd/lifecycle.py` | what happens to one task: retrieve, solve, maintain |
+| `itd/solver.py` | a zero-shot ReAct solver |
+| `itd/envs/` | ALFWorld and WebArena adapters, and a toy environment |
+| `itd/runner.py`, `cli.py` | running configurations, baselines, summaries |
+| `itd/bench.py` | operator latency against a synthetic store |
+| `scripts/experiments.sh` | every experiment, one function each |
+| `tests/` | operator semantics on all three backends |
 
-## Installation
+## Install
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -37,25 +74,25 @@ cp .env.example .env            # endpoints and API keys
 pytest                          # set ITD_TEST_PG_DSN to include PostgreSQL
 ```
 
-Models are declared in `configs/models.yaml` and reached through
-OpenAI-compatible endpoints. Check that the `model` identifiers match your
-deployment.
+Task solvers and synthesizers are declared in `configs/models.yaml` and
+reached over OpenAI-compatible endpoints; check the `model` identifiers
+against your own deployment.
 
-Benchmarks are optional extras:
+Both benchmarks are optional:
 
-- **ALFWorld**: `pip install -e ".[alfworld]"`, `alfworld-download`, set
+- **ALFWorld** — `pip install -e ".[alfworld]"`, `alfworld-download`, set
   `ALFWORLD_DATA`, and copy ALFWorld's `configs/base_config.yaml` to
   `configs/alfworld_base.yaml`.
-- **WebArena**: `pip install -e ".[webarena]"`, `playwright install chromium`,
-  and the `WA_*` variables of a running WebArena instance. Trace quality on
-  WebArena needs the intermediate checkpoints in
-  `data/webarena_checkpoints.json` (format in
-  `data/webarena_checkpoints.example.json`).
+- **WebArena** — `pip install -e ".[webarena]"`, `playwright install
+  chromium`, and the `WA_*` variables of a running instance. Ranking
+  unsuccessful traces needs intermediate checkpoints in
+  `data/webarena_checkpoints.json`; the format is in
+  `data/webarena_checkpoints.example.json`.
 
-## Dry run
+## Try it without any of that
 
-No API key, database or benchmark is needed: a toy environment, a mock LLM
-that picks random admissible actions, and the in-memory store.
+A toy environment, a mock LLM that picks random admissible actions, and the
+in-memory backend. No API key, no database, no benchmark:
 
 ```bash
 itd run --config configs/toy.yaml --mode raw --split train --tag populate
@@ -64,38 +101,49 @@ itd run --config configs/toy.yaml --approach hybrid --policy failure-triggered \
 itd summarize runs/toy/*
 ```
 
-This only exercises the pipeline; its success rates mean nothing.
+It exercises the whole pipeline. The success rates it prints mean nothing.
 
-## Running the experiments
+## Running something real
 
-`itd run` runs one configuration: a YAML file (`configs/alfworld.yaml`,
-`configs/webarena.yaml`) whose fields can be overridden by flags
-(`itd run --help`). Each run writes `config.json`, `results.jsonl` (one record
-per task, with timings) and `traces.jsonl` to `runs/<benchmark>/<name>_seed<seed>/`,
-and uses its own ITD (PostgreSQL schema or Qdrant collections).
+`itd run` runs one configuration. A YAML file supplies the defaults
+(`configs/alfworld.yaml`, `configs/webarena.yaml`) and flags override them;
+`itd run --help` lists them. Each run writes `config.json`, `results.jsonl`
+(one record per task, with timings) and `traces.jsonl` into
+`runs/<benchmark>/<name>_seed<seed>/`, against its own store.
 
-Offline and Hybrid ITDs are pre-populated from a JSONL file of traces, which
-is simply the `traces.jsonl` of a run without experience reuse. Traces are
-loaded through `Maintain`, so `k` and θ apply to the initial ITD too.
+The three choices that matter:
 
+- **When the store is written.** *Offline* freezes it before evaluation,
+  *Online* grows it as tasks are solved, *Hybrid* starts from a seed store and
+  keeps growing.
+- **When it is read.** *On-demand* retrieves before the first attempt.
+  *Failure-triggered* lets the agent try unaided and only retrieves if that
+  fails — which costs a second attempt, so compare it against `--mode retry`,
+  a second unaided attempt, and not against the single-attempt baseline.
+- **What is handed over.** Examples, Rules, Reflections, or all three
+  combined.
 
-## Using the operators directly
+Offline and Hybrid need a seed store, loaded from a JSONL file of traces —
+just the `traces.jsonl` of a run that reused nothing. It is loaded through
+`maintain`, so `k` and θ shape the seed store exactly as they shape a growing
+one.
 
-```python
-from itd.embeddings import SentenceEmbedder
-from itd.model import Task, Trace, Step
-from itd.quality import assign_quality
-from itd.store import make_store
+## Quality
 
-store = make_store("postgres", SentenceEmbedder(), "demo", dsn="postgresql://itd:itd@localhost/itd")
-task = Task("map-7", "Map", "What is the duration required to walk from A to B, then drive from B to C?",
-            "What is the duration required to walk from CMU to Apple Store Shadyside, then drive to Starbucks on Craig Street?")
-trace = Trace(task.task_id, task.task_family, task.template_desc, actor="deepseek-v3.2",
-              label="failure", reward=0.0, horizon=30, steps=[Step(0, "<page>", "click('12')")],
-              progress=3 / 5)                    # m/M, reported by the environment
+A trace's category decides which partition it competes in, and its score
+decides whether it wins:
 
-store.add_task(task)
-store.maintain(assign_quality(trace, theta=0.5), k=1)     # Maintain(D, τ, k)
-store.retrieve_all(task, n=1)                             # RetrieveAll(t, D, n)
-```
+| Category | When | Score |
+|---|---|---|
+| success | the benchmark says the task was solved | `reward / horizon` — shorter is better |
+| near-success | not solved, but progress `m/M ≥ θ` | `m/M` — further is better |
+| failure | not solved, progress below θ | `1 - m/M` — failing early and cleanly is better |
 
+Progress is whatever the environment can be asked for, never inferred from the
+agent's own text: ALFWorld re-derives the remaining plan from world state,
+WebArena matches intermediate checkpoints. Neither ever overrides the
+benchmark's own verdict on success — they only rank what failed.
+
+Retrieval reads all three categories by default. A failure is worth showing
+precisely because it shows what not to do, which the Rules and Reflections
+prompts both lean on.

@@ -1,4 +1,4 @@
-"""Reuse strategies (Section 3.1): turn retrieved traces into an Experience,
+"""Reuse strategies: turn retrieved traces into an Experience,
 and wrap experiences for injection into the task solver's prompt."""
 from __future__ import annotations
 

@@ -1,8 +1,8 @@
-"""Algorithm 1 on the toy environment with scripted solvers."""
+"""The per-task lifecycle, on a tiny environment with scripted solvers."""
 import pytest
 
 from itd.embeddings import HashEmbedder
-from itd.envs.toy import ToyEnv
+from toy_env import ToyEnv
 from itd.lifecycle import Lifecycle
 from itd.model import FAILURE, NEAR_SUCCESS, SUCCESS
 from itd.solver import TaskSolver, parse_action
@@ -46,7 +46,7 @@ def test_parse_action():
 
 def test_online_on_demand_populates_and_reuses():
     lc, llm, tasks = make([3, 2, 0, 3], approach="online", policy="on-demand", strategy="rules")
-    heat = [t for t in tasks if t.task_family == "Heat and place"]
+    heat = [t for t in tasks if t.task_family == "pick_heat_then_place_in_recep"]
     labels = [lc.run(t)[0].quality_category for t in heat[:3]]
     assert labels == [SUCCESS, NEAR_SUCCESS, FAILURE]
     assert lc.store.count_traces() == 3

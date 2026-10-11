@@ -7,14 +7,12 @@ name = "itd"
 version = "0.1.0"
 description = "Interaction Trace Databases for Agent Experience Reuse"
 requires-python = ">=3.10"
-dependencies = ["numpy", "pyyaml", "openai>=1.0"]
+dependencies = ["numpy", "pyyaml", "openai>=1.0", "alfworld", "browsergym-webarena"]
 
 [project.optional-dependencies]
 postgres = ["psycopg[binary]>=3.1", "pgvector>=0.3"]
 qdrant = ["qdrant-client>=1.12"]
 embeddings = ["sentence-transformers>=2.2"]
-alfworld = ["alfworld"]
-webarena = ["browsergym-webarena"]
 plots = ["matplotlib"]
 dev = ["pytest"]
 
@@ -29,3 +27,4 @@ include = ["itd*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["tests"]

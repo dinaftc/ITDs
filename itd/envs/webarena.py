@@ -1,17 +1,11 @@
 """WebArena adapter, through BrowserGym.
 
-A task's family is its site (`gitlab`, `shopping`, ...), or `cross_site` when
-it spans several; its template is the benchmark's own `intent_template`, of
-which there are 190 across the 812 tasks.
+Family is the site, or `cross_site`; template is the benchmark's
+`intent_template` (190 over the 812 tasks). Progress comes from intermediate
+checkpoints, which rank unsuccessful traces only: the benchmark's own
+evaluation decides success, and checkpoints are never shown to the solver.
 
-Progress comes from intermediate checkpoints (format in
-`data/webarena_checkpoints.example.json`). These only ever supplement the
-benchmark's own final evaluation, which decides success and is never replaced
-or approximated; checkpoints are used to rank unsuccessful traces, and are
-never shown to the task solver.
-
-Requires `pip install browsergym-webarena`, `playwright install chromium`,
-and the WA_* environment variables of a running WebArena instance.
+Requires `playwright install chromium` and the WA_* variables.
 """
 from __future__ import annotations
 

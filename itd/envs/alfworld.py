@@ -1,18 +1,11 @@
 """ALFWorld adapter (text-only AlfredTWEnv).
 
-A task's family is its PDDL ``task_type``; its template is the goal sentence
-with the concrete targets replaced by slots, so every "put a hot X in Y" task
-shares one template regardless of the objects involved. Both come from
-``traj_data.json``, so they are derived, never annotated.
+Family is the PDDL ``task_type``, template the goal sentence with its targets
+slotted out; both derived from ``traj_data.json``. Progress compares the
+planner's plan at reset with the plan remaining after execution, excluding
+navigation.
 
-Progress is read from the environment's planner rather than inferred from the
-agent's text. TextWorld can be asked at any point for the optimal command
-sequence from the current world state to the goal, so the number of sub-goals
-is the plan length at reset and the number retired is how much shorter the
-plan has become. Navigation is excluded: "go to x" always succeeds, and
-counting it would credit progress for walking around.
-
-Requires `pip install alfworld`, `alfworld-download`, and ALFWORLD_DATA.
+Requires `alfworld-download` and ALFWORLD_DATA.
 """
 from __future__ import annotations
 

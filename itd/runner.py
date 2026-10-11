@@ -23,7 +23,7 @@ from .store import make_store
 
 @dataclass
 class RunConfig:
-    benchmark: str = "toy"                 # toy | alfworld | webarena
+    benchmark: str = "alfworld"            # alfworld | webarena
     split: str = "eval"
     mode: str = "itd"                      # raw | retry | itd
     approach: str = "offline"              # offline | online | hybrid
@@ -33,7 +33,7 @@ class RunConfig:
     n: int = 1
     theta: float = 0.5
     categories: str = ",".join(CATEGORIES)  # quality categories available to RetrieveAll
-    solver: str = "mock"                   # model names from configs/models.yaml
+    solver: str = "qwen2.5-72b"            # model names from configs/models.yaml
     synthesizer: str = ""                  # defaults to the solver
     init_traces: str = ""                  # JSONL of traces pre-populating Offline / Hybrid ITDs
     leave_one_out: bool = False

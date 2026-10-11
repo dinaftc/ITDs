@@ -1,6 +1,0 @@
-# Dry run without API keys or benchmarks: toy environment, mock LLM, hashing embedder.
-benchmark: toy
-solver: mock
-embedder: hash
-store: memory
-out: runs/toy

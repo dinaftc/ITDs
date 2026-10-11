@@ -1,9 +1,7 @@
 """The data model: Task, Trace, Step, Experience.
 
-A Trace records the `actor` that produced it and an Experience records the
-`synthesizer` that wrote it, so neither is tied to the model now solving the
-task. That is what lets a small, cheap task solver run on traces collected by
-a larger one, and on experiences written by a third.
+A Trace records its `actor` and an Experience its `synthesizer`, so neither is
+tied to the model solving the task.
 """
 from __future__ import annotations
 
@@ -25,8 +23,6 @@ STRATEGIES = (EXAMPLES, RULES, REFLECTIONS, COMBINED)
 
 @dataclass(frozen=True)
 class Task:
-    """A task the agent is asked to do, and the template it instantiates."""
-
     task_id: str
     task_family: str
     template_desc: str
@@ -35,8 +31,6 @@ class Task:
 
 @dataclass
 class Step:
-    """One turn of a trace; the trace it belongs to is implied by the owner."""
-
     step_index: int
     observation: str
     action: str
@@ -77,13 +71,7 @@ class Trace:
 
 @dataclass
 class Experience:
-    """What retrieval actually hands the task solver, built from traces.
-
-    Keyed by (task family, template, strategy, synthesizer) and cached under
-    that key, so the same traces are never synthesized twice; `maintain`
-    invalidates the entry when it changes the partition they came from.
-    `synthesizer` is "" for Examples, which needs no model to assemble.
-    """
+    """Cached by (template, strategy, synthesizer); "" synthesizer for Examples."""
 
     task_family: str
     template_desc: str

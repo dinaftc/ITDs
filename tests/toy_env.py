@@ -1,17 +1,17 @@
-"""A tiny text environment for dry runs and tests.
+"""A tiny text environment, used only by the tests.
 
 Each task is a fixed sequence of three subtasks, e.g. take / heat / put, so
 attempts end as success, near-success or failure like on the real benchmarks.
 """
 from __future__ import annotations
 
-from ..model import Task
-from .base import Environment, StepResult
+from itd.envs.base import Environment, StepResult
+from itd.model import Task
 
 _FAMILIES = {
-    "Heat and place": ("heat an object and place it in a receptacle", "put a hot {o} in {r}", "heat"),
-    "Cool and place": ("cool an object and place it in a receptacle", "put a cool {o} in {r}", "cool"),
-    "Clean and place": ("clean an object and place it in a receptacle", "put a clean {o} in {r}", "clean"),
+    "pick_heat_then_place_in_recep": ("put a hot {object} in {receptacle}", "put a hot {o} in {r}", "heat"),
+    "pick_cool_then_place_in_recep": ("put a cool {object} in {receptacle}", "put a cool {o} in {r}", "cool"),
+    "pick_clean_then_place_in_recep": ("put a clean {object} in {receptacle}", "put a clean {o} in {r}", "clean"),
 }
 _OBJECTS = ["cup", "mug", "apple", "egg", "plate", "bowl"]
 _RECEPTACLES = ["cabinet", "fridge", "countertop", "shelf"]

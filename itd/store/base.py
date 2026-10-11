@@ -1,14 +1,7 @@
 """Store interface shared by the in-memory, PostgreSQL and Qdrant backends.
 
-The two operators are `maintain` and `retrieve`, and every backend applies the
-same partitioning and the same trace ranking, so a store can be moved between
-them without changing which traces it keeps or returns.
-
-A partition is one (task template, quality category). Keeping the three
-categories apart is what stops a flood of successes from evicting the one
-failure that shows where the trap is, and it caps the store at 3k templates
-rather than at the number of tasks ever attempted: the store grows with the
-variety of work, not with how long the agent has been running.
+All three apply the same partitioning and ranking. A partition is one
+(task template, quality category); the store holds at most 3k|T| traces.
 """
 from __future__ import annotations
 
@@ -18,11 +11,7 @@ import numpy as np
 
 from ..model import CATEGORIES, Experience, Task, Trace
 
-# Retrieval alternatives. The default answers from the task's own template
-# first and only falls back to embedding similarity when that does not fill
-# the budget, which keeps the common case to an indexed equality lookup and
-# still lets a task with no history of its own borrow from a close relative.
-EXACT_FALLBACK = "exact+fallback"
+EXACT_FALLBACK = "exact+fallback"   # exact template, similarity only on underfill
 SIMILARITY_ONLY = "similarity"      # always rank templates by embedding
 
 
@@ -39,28 +28,23 @@ class ITDStore(ABC):
 
     @abstractmethod
     def maintain(self, trace: Trace, k: int) -> bool:
-        """Keep at most k traces in the partition the trace belongs to.
-
-        A partition is one (task template, quality category) pair. The
-        incoming trace competes with the traces already there; the k best by
-        quality score, ties broken by the shorter trace, are kept.
+        """Keep the k best of the partition plus the incoming trace, ranked by
+        quality score with ties broken by shorter horizon.
 
         `trace` must already carry its quality category and score, and its task
-        must have been registered. Returns True iff τ is retained; in that case
-        cached experiences of the template are invalidated.
+        must be registered. Returns True if it is retained, in which case the
+        template's cached experiences are invalidated.
         """
 
     @abstractmethod
     def retrieve(self, task: Task, category: str, n: int, *, exclude_task_id: str | None = None,
                  mode: str = EXACT_FALLBACK, query_vec: np.ndarray | None = None,
                  with_steps: bool = True) -> list[Trace]:
-        """At most n traces of one quality category for this task.
+        """At most n traces of one quality category.
 
-        Traces of t's own task template come first. Remaining positions are
-        filled from other templates of the same task family, ranked by cosine
-        similarity between the template embedding and t's description; traces
-        within a template are ranked by quality score. `exclude_task_id`
-        implements leave-one-out evaluation.
+        The task's own template first, then other templates of the same family
+        ranked by cosine similarity to the task description; within a template,
+        by quality score. `exclude_task_id` gives leave-one-out evaluation.
         """
 
     def retrieve_all(self, task: Task, n: int, *, categories=CATEGORIES, **kw) -> list[Trace]:

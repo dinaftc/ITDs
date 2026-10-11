@@ -44,9 +44,6 @@ class Environment(ABC):
 
 
 def make_env(benchmark: str, **kw) -> Environment:
-    if benchmark == "toy":
-        from .toy import ToyEnv
-        return ToyEnv(**kw)
     if benchmark == "alfworld":
         from .alfworld import ALFWorldEnv
         return ALFWorldEnv(**kw)
